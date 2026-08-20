@@ -1,0 +1,34 @@
+:root {
+  color: #1b1f24;
+  background: #f4f1ea;
+  font-family: "Segoe UI", sans-serif;
+}
+body { margin: 0; }
+header, main { max-width: 1100px; margin: 0 auto; padding: 1rem; }
+h1 { margin-bottom: 0.2rem; }
+nav { display: flex; gap: 0.5rem; margin: 1rem 0; }
+button, a {
+  background: #1f4d3a;
+  color: #fff;
+  border: 0;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  text-decoration: none;
+  cursor: pointer;
+}
+button.active, a:hover { background: #163628; }
+.toolbar { margin: 0 0 1rem; }
+table { width: 100%; border-collapse: collapse; background: #fff; }
+th, td { border-bottom: 1px solid #ddd; padding: 0.45rem 0.5rem; text-align: left; }
+.panel { display: none; }
+.panel.active { display: block; }
+.hidden { display: none !important; }
+.cards { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.card {
+  background: #fff;
+  padding: 0.8rem 1rem;
+  min-width: 8rem;
+  border-radius: 6px;
+}
+.card strong { display: block; font-size: 1.4rem; }
+pre { background: #fff; padding: 0.8rem; overflow: auto; }

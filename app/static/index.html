@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Safety Guardians 세션</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <h1>Safety Guardians</h1>
+    <p>로컬 세션 기록. VR은 판정하지 않고, 받은 이벤트만 보여 줍니다.</p>
+    <nav>
+      <button type="button" data-tab="education" class="active">교육 이수</button>
+      <button type="button" data-tab="experience">체험 통계</button>
+    </nav>
+    <p class="toolbar">
+      <a id="csv-link" href="/v1/export/sessions.csv">CSV 받기</a>
+    </p>
+  </header>
+  <main>
+    <section id="education" class="panel active">
+      <table>
+        <thead>
+          <tr>
+            <th>시작</th>
+            <th>교육생</th>
+            <th>이수</th>
+            <th>시간</th>
+            <th>도달</th>
+            <th>위반</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="edu-body"></tbody>
+      </table>
+    </section>
+    <section id="experience" class="panel">
+      <div id="exp-stats" class="cards"></div>
+      <h2>이탈 step</h2>
+      <ul id="exp-drops"></ul>
+      <h2>오늘 세션</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>시작</th>
+            <th>기기</th>
+            <th>종료</th>
+            <th>시간</th>
+            <th>도달</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="exp-body"></tbody>
+      </table>
+    </section>
+    <section id="detail" class="panel hidden">
+      <p><button type="button" id="back">목록으로</button>
+        <a id="jsonl-link" href="#">JSONL 받기</a></p>
+      <h2 id="detail-title">세션</h2>
+      <pre id="detail-summary"></pre>
+      <h3>단계 시간</h3>
+      <ul id="detail-phases"></ul>
+      <h3>step</h3>
+      <ul id="detail-steps"></ul>
+      <h3>타임라인</h3>
+      <ol id="detail-events"></ol>
+    </section>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>
