@@ -2,7 +2,12 @@
 
 발연질산 누출 VR의 **세션·이벤트·이수/통계** 서버입니다. 밸브·붐·응시 판정은 Unity가 하고, 이 서버는 받은 JSON만 저장합니다.
 
-VR 클라이언트: `seoulit-SLA/PreludeOpus-SafetyGuardians-Final`
+- 이 레포: [github.com/jyunsu05/PreludeOpus-SafetyGuardians-SessionServer](https://github.com/jyunsu05/PreludeOpus-SafetyGuardians-SessionServer)
+- VR 클라이언트: [seoulit-SLA/PreludeOpus-SafetyGuardians-Final](https://github.com/seoulit-SLA/PreludeOpus-SafetyGuardians-Final)
+
+```bat
+git clone https://github.com/jyunsu05/PreludeOpus-SafetyGuardians-SessionServer.git
+```
 
 ## 로컬에서 실행
 
