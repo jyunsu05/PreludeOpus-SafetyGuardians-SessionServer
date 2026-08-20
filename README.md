@@ -5,13 +5,33 @@
 - 이 레포: [github.com/jyunsu05/PreludeOpus-SafetyGuardians-SessionServer](https://github.com/jyunsu05/PreludeOpus-SafetyGuardians-SessionServer)
 - VR 클라이언트: [seoulit-SLA/PreludeOpus-SafetyGuardians-Final](https://github.com/seoulit-SLA/PreludeOpus-SafetyGuardians-Final)
 
-```bat
-git clone https://github.com/jyunsu05/PreludeOpus-SafetyGuardians-SessionServer.git
-```
+## Windows에서 쓰기
 
-## 로컬에서 실행
+Python 3.11+ 가 한 번만 있으면 됩니다. [python.org](https://www.python.org/downloads/) 설치 때 **Add python.exe to PATH** 를 체크하세요.
 
-Python 3.11+ (3.14도 됩니다).
+1. GitHub에서 **Code → Download ZIP**
+2. 압축을 푼다
+3. **`start.bat` 을 더블클릭**한다
+
+서버가 켜지고, 잠시 후 브라우저가 [http://127.0.0.1:8080](http://127.0.0.1:8080) 으로 열립니다.  
+`sessions.db` 는 없을 때 `data` 폴더에 자동으로 만들어집니다. 이 창을 닫으면 서버가 꺼집니다.
+
+이미 서버가 켜져 있으면 `대시보드.url` 을 더블클릭해도 같은 화면이 열립니다.
+
+기록은 GitHub에서 받아 오지 않습니다. 예전 기록을 옮기려면 `data` 폴더만 복사하세요.
+
+## Unity 연결
+
+`Assets/SafetyGuardians/Resources/ServerSessionConfig.asset`
+
+- `apiBaseUrl` 이 비어 있어도, 이 서버가 켜져 있으면 Play 때 `http://127.0.0.1:8080/v1` 로 자동 연결됩니다
+- 같은 PC가 아니면 `http://<이 PC의 IP>:8080/v1`
+- `deviceId`: 기기마다 다르게 (예: `quest-edu-03`)
+- `deviceToken`: 비워 두면 로컬은 인증을 건너뜁니다
+
+서버가 꺼져 있어도 VR은 로컬 JSONL로 플레이합니다.
+
+## 직접 명령으로 실행
 
 ```bat
 cd PreludeOpus-SafetyGuardians-SessionServer
@@ -21,21 +41,7 @@ pip install -r requirements.txt
 uvicorn app.main:app --host 0.0.0.0 --port 8080
 ```
 
-브라우저: [http://127.0.0.1:8080](http://127.0.0.1:8080)  
 헬스: [http://127.0.0.1:8080/health](http://127.0.0.1:8080/health)
-
-SQLite 파일은 `data/sessions.db`에 생깁니다. 이 폴더를 복사하면 기록도 같이 이동합니다.
-
-## Unity 연결
-
-`Assets/SafetyGuardians/Resources/ServerSessionConfig.asset`
-
-- `apiBaseUrl`: `http://<이 PC의 IP>:8080/v1`  
-  같은 PC에서 에디터 Play면 `http://127.0.0.1:8080/v1`
-- `deviceId`: 기기마다 다르게 (예: `quest-edu-03`)
-- `deviceToken`: 비워 두면 로컬은 인증을 건너뜁니다. 켜려면 서버를 `DEVICE_TOKEN=...`으로 실행하고 같은 값을 넣습니다.
-
-서버가 꺼져 있어도 VR은 로컬 JSONL로 플레이합니다. 나중에 같은 `clientSessionId`로 다시 올립니다.
 
 ## VR이 보내는 API
 
