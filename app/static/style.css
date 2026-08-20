@@ -17,7 +17,8 @@ button, a {
   cursor: pointer;
 }
 button.active, a:hover { background: #163628; }
-.toolbar { margin: 0 0 1rem; }
+.toolbar { margin: 0 0 1rem; display: flex; align-items: center; gap: 0.8rem; }
+#refresh-stamp { color: #5a6158; font-size: 0.9rem; }
 table { width: 100%; border-collapse: collapse; background: #fff; }
 th, td { border-bottom: 1px solid #ddd; padding: 0.45rem 0.5rem; text-align: left; }
 .panel { display: none; }

@@ -7,6 +7,7 @@ const panels = {
   education: document.getElementById("education"),
   experience: document.getElementById("experience"),
 };
+let currentDetailId = null;
 
 function fmtTime(value) {
   if (!value) return "";
@@ -81,6 +82,7 @@ async function loadExperience() {
 }
 
 async function openDetail(sessionId) {
+  currentDetailId = sessionId;
   const session = await loadJson("/v1/sessions/" + sessionId);
   panels.education.classList.remove("active");
   panels.experience.classList.remove("active");
@@ -116,6 +118,7 @@ async function openDetail(sessionId) {
 }
 
 document.getElementById("back").addEventListener("click", () => {
+  currentDetailId = null;
   detail.classList.add("hidden");
   detail.classList.remove("active");
   const current = document.querySelector("nav button.active").dataset.tab;
@@ -126,6 +129,7 @@ document.querySelectorAll("nav button").forEach((button) => {
   button.addEventListener("click", () => {
     document.querySelectorAll("nav button").forEach((item) => item.classList.remove("active"));
     button.classList.add("active");
+    currentDetailId = null;
     detail.classList.add("hidden");
     detail.classList.remove("active");
     Object.keys(panels).forEach((key) => panels[key].classList.toggle("active", key === button.dataset.tab));
@@ -138,4 +142,41 @@ document.querySelectorAll("nav button").forEach((button) => {
   });
 });
 
+async function refreshVisible() {
+  if (document.hidden) {
+    return;
+  }
+
+  try {
+    const onDetail = currentDetailId && !detail.classList.contains("hidden");
+    if (onDetail) {
+      await openDetail(currentDetailId);
+    } else {
+      const tabButton = document.querySelector("nav button.active");
+      const tab = tabButton ? tabButton.dataset.tab : "education";
+      if (tab === "experience") {
+        await loadExperience();
+      } else {
+        await loadEducation();
+      }
+    }
+
+    const stamp = document.getElementById("refresh-stamp");
+    if (stamp) {
+      stamp.textContent = "자동 새로고침 " + new Date().toLocaleTimeString();
+    }
+  } catch (err) {
+    const stamp = document.getElementById("refresh-stamp");
+    if (stamp) {
+      stamp.textContent = "서버에 연결하지 못했습니다";
+    }
+  }
+}
+
 loadEducation();
+setInterval(refreshVisible, 10000);
+document.addEventListener("visibilitychange", function () {
+  if (!document.hidden) {
+    refreshVisible();
+  }
+});

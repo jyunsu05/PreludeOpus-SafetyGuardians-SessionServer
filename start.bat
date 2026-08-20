@@ -3,6 +3,21 @@ setlocal EnableExtensions
 cd /d "%~dp0"
 title Prelude Opus Session Server
 
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0check-port.ps1"
+if %errorlevel%==0 (
+  echo 서버가 이미 켜져 있습니다. 브라우저만 엽니다.
+  echo http://127.0.0.1:8080
+  start "" "http://127.0.0.1:8080"
+  pause
+  exit /b 0
+)
+if %errorlevel%==2 (
+  echo 8080 포트를 다른 프로그램이 쓰고 있습니다.
+  echo 그 프로그램을 끄거나, 서버 창이 이미 열려 있는지 확인하세요.
+  pause
+  exit /b 1
+)
+
 set "PY_CMD="
 py -3 -c "import sys" >nul 2>&1 && set "PY_CMD=py -3"
 if not defined PY_CMD python -c "import sys" >nul 2>&1 && set "PY_CMD=python"

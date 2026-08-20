@@ -7,7 +7,7 @@ EDUCATION_RULES = {
     "timeLimitSec": None,
     "allowSkip": False,
     "requireTraineeId": True,
-    "passedRequiresDecon": True,
+    "passedRequiresDecon": False,
 }
 
 EXPERIENCE_RULES = {
