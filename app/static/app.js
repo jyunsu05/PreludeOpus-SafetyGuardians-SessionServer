@@ -121,8 +121,13 @@ async function loadExperience() {
 }
 
 const SOP_STEPS = [
+  ["ppe_suit", "방호복"],
+  ["ppe_boots", "안전화"],
+  ["ppe_respirator", "호흡기"],
+  ["ppe_goggles", "보안경"],
+  ["ppe_gloves", "장갑"],
+  ["ppe_worn", "PPE 착용 완료"],
   ["site_entered", "현장 진입"],
-  ["ppe_worn", "PPE 착용"],
   ["leak_gazed", "누출 응시"],
   ["valve_locked", "밸브 잠금"],
   ["boom_deployed", "방수붐 전개"],
