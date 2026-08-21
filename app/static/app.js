@@ -121,6 +121,8 @@ async function loadExperience() {
 }
 
 const SOP_STEPS = [
+  ["alarm_ack", "경보 인지"],
+  ["cctv_reviewed", "CCTV·점검 이력"],
   ["ppe_suit", "방호복"],
   ["ppe_boots", "안전화"],
   ["ppe_respirator", "호흡기"],
@@ -132,6 +134,7 @@ const SOP_STEPS = [
   ["valve_locked", "밸브 잠금"],
   ["boom_deployed", "방수붐 전개"],
   ["neutralized", "중화"],
+  ["pad_absorbed", "흡착 패드"],
   ["waste_packed", "폐기물 포장"],
   ["waste_binned", "폐기물 투입"],
   ["decon_shower", "제독 샤워"],
