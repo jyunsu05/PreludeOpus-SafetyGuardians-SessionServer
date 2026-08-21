@@ -23,7 +23,8 @@ Python 3.11+ 가 한 번만 있으면 됩니다. [python.org](https://www.python
 세션 DB는 GitHub에서 받아 오지 않습니다. **`data` 폴더만 복사**하면 기록이 그대로 옮겨집니다.
 
 - 파일: `data/sessions.db` (처음 실행 때 자동 생성)
-- 백업: `data` 폴더를 USB나 다른 디스크에 복사
+- 백업: `backup.bat` 을 더블클릭하면 `backups\data-날짜시간` 으로 복사됩니다
+- 또는 `data` 폴더를 USB나 다른 디스크에 복사
 - 복원: 복사해 둔 `data` 를 이 프로그램 폴더에 다시 넣기
 
 `.venv` 는 백업하지 마세요. 패키지 캐시입니다.

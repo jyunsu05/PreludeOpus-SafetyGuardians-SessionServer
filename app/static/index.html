@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Safety Guardians 세션</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v=2">
 </head>
 <body>
   <header>
@@ -15,7 +15,7 @@
       <button type="button" data-tab="experience">체험 통계</button>
     </nav>
     <p class="toolbar">
-      <a id="csv-link" href="/v1/export/sessions.csv">CSV 받기</a>
+      <a id="csv-link" href="/v1/export/sessions.csv?mode=education">CSV 받기</a>
       <span id="refresh-stamp">10초마다 자동 새로고침</span>
     </p>
   </header>
@@ -68,6 +68,6 @@
       <ol id="detail-events"></ol>
     </section>
   </main>
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=2"></script>
 </body>
 </html>

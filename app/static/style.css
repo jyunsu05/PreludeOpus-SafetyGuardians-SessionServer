@@ -32,4 +32,4 @@ th, td { border-bottom: 1px solid #ddd; padding: 0.45rem 0.5rem; text-align: lef
   border-radius: 6px;
 }
 .card strong { display: block; font-size: 1.4rem; }
-pre { background: #fff; padding: 0.8rem; overflow: auto; }
+.empty td { color: #5a6158; }

@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from . import queries
-from .db import init_db
+from .db import DB_PATH, connect, init_db
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 DEV_TOKEN = os.environ.get("DEVICE_TOKEN", "")
@@ -57,8 +57,28 @@ def authorize(authorization: str | None, x_device_id: str | None, request_id: st
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+def health() -> dict[str, object]:
+    sessions = 0
+    try:
+        with connect() as conn:
+            sessions = int(conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0])
+    except Exception:
+        pass
+    return {"status": "ok", "db": str(DB_PATH), "sessions": sessions}
+
+
+@app.get("/v1")
+def api_index() -> dict[str, object]:
+    return {
+        "service": "Prelude Opus Session Server",
+        "dashboard": "/",
+        "health": "/health",
+        "post": [
+            "/v1/sessions",
+            "/v1/sessions/{id}/events",
+            "/v1/sessions/{id}/complete",
+        ],
+    }
 
 
 @app.post("/v1/sessions")

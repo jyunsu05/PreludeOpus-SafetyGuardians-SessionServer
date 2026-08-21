@@ -11,7 +11,36 @@ let currentDetailId = null;
 
 function fmtTime(value) {
   if (!value) return "";
-  return value.replace("T", " ").replace("Z", "");
+  const raw = /Z$/i.test(value) ? value : value + "Z";
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) {
+    return value.replace("T", " ").replace("Z", "");
+  }
+  const pad = (n) => String(n).padStart(2, "0");
+  return (
+    date.getFullYear() +
+    "-" +
+    pad(date.getMonth() + 1) +
+    "-" +
+    pad(date.getDate()) +
+    " " +
+    pad(date.getHours()) +
+    ":" +
+    pad(date.getMinutes()) +
+    ":" +
+    pad(date.getSeconds())
+  );
+}
+
+function isSmoke(session) {
+  return session.session_id === "11111111-1111-1111-1111-111111111111";
+}
+
+function emptyRow(cols, text) {
+  const tr = document.createElement("tr");
+  tr.className = "empty";
+  tr.innerHTML = `<td colspan="${cols}">${text}</td>`;
+  return tr;
 }
 
 function fmtSec(value) {
@@ -40,8 +69,13 @@ function sessionRow(session, extra) {
 
 async function loadEducation() {
   const data = await loadJson("/v1/sessions?mode=education");
+  const rows = (data.sessions || []).filter((session) => !isSmoke(session));
   eduBody.innerHTML = "";
-  for (const session of data.sessions) {
+  if (rows.length === 0) {
+    eduBody.appendChild(emptyRow(7, "아직 세션이 없습니다. Unity에서 Play 하면 여기에 나타납니다."));
+    return;
+  }
+  for (const session of rows) {
     eduBody.appendChild(sessionRow(session, `
       <td>${fmtTime(session.started_at)}</td>
       <td>${session.trainee_id || "-"}</td>
@@ -69,7 +103,12 @@ async function loadExperience() {
     .map((item) => `<li>${item.step} (${item.count})</li>`)
     .join("") || "<li>없음</li>";
   expBody.innerHTML = "";
-  for (const session of data.sessions) {
+  const rows = (data.sessions || []).filter((session) => !isSmoke(session));
+  if (rows.length === 0) {
+    expBody.appendChild(emptyRow(6, "오늘 체험 세션이 없습니다."));
+    return;
+  }
+  for (const session of rows) {
     expBody.appendChild(sessionRow(session, `
       <td>${fmtTime(session.started_at)}</td>
       <td>${session.device_id || ""}</td>
@@ -173,7 +212,7 @@ async function refreshVisible() {
   }
 }
 
-loadEducation();
+refreshVisible();
 setInterval(refreshVisible, 10000);
 document.addEventListener("visibilitychange", function () {
   if (!document.hidden) {
