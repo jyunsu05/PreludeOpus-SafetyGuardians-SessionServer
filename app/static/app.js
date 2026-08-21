@@ -137,6 +137,7 @@ const SOP_STEPS = [
   ["pad_absorbed", "흡착 패드"],
   ["waste_packed", "폐기물 포장"],
   ["waste_binned", "폐기물 투입"],
+  ["final_report", "최종 보고"],
   ["decon_shower", "제독 샤워"],
   ["scenario_complete", "시나리오 종료(TTS)"],
 ];
