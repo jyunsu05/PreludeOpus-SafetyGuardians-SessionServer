@@ -32,4 +32,14 @@ th, td { border-bottom: 1px solid #ddd; padding: 0.45rem 0.5rem; text-align: lef
   border-radius: 6px;
 }
 .card strong { display: block; font-size: 1.4rem; }
+pre { background: #fff; padding: 0.8rem; overflow: auto; }
 .empty td { color: #5a6158; }
+.stuck {
+  background: #fff4e5;
+  border-left: 4px solid #c45c26;
+  padding: 0.7rem 0.9rem;
+  font-weight: 600;
+}
+.step-done { color: #1f4d3a; }
+.step-next { color: #c45c26; font-weight: 700; }
+.step-todo { color: #8a9088; }

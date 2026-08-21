@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Safety Guardians 세션</title>
-  <link rel="stylesheet" href="/static/style.css?v=2">
+  <link rel="stylesheet" href="/static/style.css?v=3">
 </head>
 <body>
   <header>
@@ -59,15 +59,18 @@
       <p><button type="button" id="back">목록으로</button>
         <a id="jsonl-link" href="#">JSONL 받기</a></p>
       <h2 id="detail-title">세션</h2>
+      <p id="detail-stuck" class="stuck"></p>
       <pre id="detail-summary"></pre>
       <h3>단계 시간</h3>
       <ul id="detail-phases"></ul>
-      <h3>step</h3>
+      <h3>진행 (여기서 막힘)</h3>
       <ul id="detail-steps"></ul>
+      <h3>위반</h3>
+      <ul id="detail-violations"></ul>
       <h3>타임라인</h3>
       <ol id="detail-events"></ol>
     </section>
   </main>
-  <script src="/static/app.js?v=2"></script>
+  <script src="/static/app.js?v=3"></script>
 </body>
 </html>

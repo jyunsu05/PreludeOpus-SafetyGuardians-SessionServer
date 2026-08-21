@@ -120,6 +120,66 @@ async function loadExperience() {
   }
 }
 
+const SOP_STEPS = [
+  ["site_entered", "현장 진입"],
+  ["ppe_worn", "PPE 착용"],
+  ["leak_gazed", "누출 응시"],
+  ["valve_locked", "밸브 잠금"],
+  ["boom_deployed", "방수붐 전개"],
+  ["neutralized", "중화"],
+  ["waste_packed", "폐기물 포장"],
+  ["waste_binned", "폐기물 투입"],
+  ["decon_shower", "제독 샤워"],
+  ["scenario_complete", "시나리오 종료(TTS)"],
+];
+
+function stepLabel(code) {
+  for (let i = 0; i < SOP_STEPS.length; i++) {
+    if (SOP_STEPS[i][0] === code) return SOP_STEPS[i][1];
+  }
+  return code;
+}
+
+function completedSteps(session, result) {
+  const set = {};
+  const fromResult = result.stepsCompleted || [];
+  for (let i = 0; i < fromResult.length; i++) {
+    set[fromResult[i]] = true;
+  }
+  const events = session.events || [];
+  for (let i = 0; i < events.length; i++) {
+    if (events[i].type === "step_complete" && events[i].step) {
+      set[events[i].step] = true;
+    }
+  }
+  return set;
+}
+
+function stuckMessage(session, done) {
+  const reason = session.end_reason || session.status || "";
+  let next = null;
+  for (let i = 0; i < SOP_STEPS.length; i++) {
+    const code = SOP_STEPS[i][0];
+    if (code === "decon_shower") continue;
+    if (!done[code]) {
+      next = SOP_STEPS[i];
+      break;
+    }
+  }
+  if (reason === "completed" && done.scenario_complete) {
+    return "끝까지 완료했습니다. 막힌 구간은 없습니다.";
+  }
+  if (next) {
+    const why =
+      reason === "timeout" ? "시간 초과" :
+      reason === "quit" ? "중도 종료" :
+      reason === "completed" ? "종료됨" :
+      reason || "진행 중";
+    return why + " · 다음이 안 된 단계: " + next[1] + " (" + next[0] + ")";
+  }
+  return "도달 단계: " + stepLabel(session.reached_step || "");
+}
+
 async function openDetail(sessionId) {
   currentDetailId = sessionId;
   const session = await loadJson("/v1/sessions/" + sessionId);
@@ -130,6 +190,17 @@ async function openDetail(sessionId) {
   document.getElementById("detail-title").textContent = session.session_id;
   document.getElementById("jsonl-link").href = "/v1/sessions/" + sessionId + "/events.jsonl";
   const result = session.result && session.result.result ? session.result.result : session.result || {};
+  const done = completedSteps(session, result);
+  let nextCode = null;
+  for (let i = 0; i < SOP_STEPS.length; i++) {
+    const code = SOP_STEPS[i][0];
+    if (code === "decon_shower") continue;
+    if (!done[code]) {
+      nextCode = code;
+      break;
+    }
+  }
+  document.getElementById("detail-stuck").textContent = stuckMessage(session, done);
   document.getElementById("detail-summary").textContent = JSON.stringify(
     {
       mode: session.mode,
@@ -146,14 +217,34 @@ async function openDetail(sessionId) {
   document.getElementById("detail-phases").innerHTML = Object.keys(phases)
     .map((key) => `<li>${key}: ${fmtSec(phases[key])}</li>`)
     .join("") || "<li>없음</li>";
-  const steps = result.stepsCompleted || [];
-  document.getElementById("detail-steps").innerHTML = steps.map((step) => `<li>${step}</li>`).join("") || "<li>없음</li>";
+  document.getElementById("detail-steps").innerHTML = SOP_STEPS.map((item) => {
+    const code = item[0];
+    const name = item[1];
+    let cls = "step-todo";
+    let mark = "☐";
+    if (done[code]) {
+      cls = "step-done";
+      mark = "☑";
+    } else if (code === nextCode) {
+      cls = "step-next";
+      mark = "►";
+    }
+    return `<li class="${cls}">${mark} ${name} (${code})</li>`;
+  }).join("");
+  const violations = (session.events || []).filter((event) => event.type === "violation");
+  const vbox = document.getElementById("detail-violations");
+  vbox.innerHTML = violations.length
+    ? violations.map((event) => {
+        const bits = [event.phase, event.step, event.code, event.severity].filter(Boolean).join(" / ");
+        return `<li>t=${event.t} ${bits}</li>`;
+      }).join("")
+    : "<li>없음</li>";
   document.getElementById("detail-events").innerHTML = (session.events || [])
     .map((event) => {
       const bits = [event.type, event.phase, event.step, event.code].filter(Boolean).join(" / ");
       return `<li>t=${event.t} ${bits}</li>`;
     })
-    .join("");
+    .join("") || "<li>없음</li>";
 }
 
 document.getElementById("back").addEventListener("click", () => {
