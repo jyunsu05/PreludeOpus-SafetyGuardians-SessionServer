@@ -48,6 +48,18 @@ function fmtSec(value) {
   return Number(value).toFixed(0) + "s";
 }
 
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function emptyBody(cols, text) {
+  return `<tr class="empty"><td colspan="${cols}">${escapeHtml(text)}</td></tr>`;
+}
+
 function passedLabel(value) {
   if (value === 1 || value === true) return "이수";
   if (value === 0 || value === false) return "미이수";
@@ -81,7 +93,7 @@ async function loadEducation() {
       <td>${session.trainee_id || "-"}</td>
       <td>${passedLabel(session.passed)}</td>
       <td>${fmtSec(session.duration_sec)}</td>
-      <td>${session.reached_step || session.reached_phase || ""}</td>
+      <td>${stepLabel(session.reached_step || session.reached_phase || "")}</td>
       <td>${session.blocking_violations || 0} / ${session.warn_violations || 0}</td>
       <td><button type="button" data-open>상세</button></td>
     `));
@@ -99,9 +111,12 @@ async function loadExperience() {
     <div class="card"><span>timeout</span><strong>${stats.timeout}</strong></div>
     <div class="card"><span>평균</span><strong>${fmtSec(stats.averageDurationSec)}</strong></div>
   `;
-  expDrops.innerHTML = (stats.dropSteps || [])
-    .map((item) => `<li>${item.step} (${item.count})</li>`)
-    .join("") || "<li>없음</li>";
+  const drops = stats.dropSteps || [];
+  expDrops.innerHTML = drops.length
+    ? drops.map((item) =>
+        `<tr><td>${escapeHtml(stepLabel(item.step))}</td><td>${item.count}</td></tr>`
+      ).join("")
+    : `<tr class="empty"><td colspan="2">없음</td></tr>`;
   expBody.innerHTML = "";
   const rows = (data.sessions || []).filter((session) => !isSmoke(session));
   if (rows.length === 0) {
@@ -114,39 +129,82 @@ async function loadExperience() {
       <td>${session.device_id || ""}</td>
       <td>${session.end_reason || session.status}</td>
       <td>${fmtSec(session.duration_sec)}</td>
-      <td>${session.reached_step || session.reached_phase || ""}</td>
+      <td>${stepLabel(session.reached_step || session.reached_phase || "")}</td>
       <td><button type="button" data-open>상세</button></td>
     `));
   }
 }
 
-const SOP_STEPS = [
-  ["alarm_ack", "경보 인지"],
-  ["cctv_reviewed", "CCTV·점검 이력"],
-  ["ppe_suit", "방호복"],
-  ["ppe_boots", "안전화"],
-  ["ppe_respirator", "호흡기"],
-  ["ppe_goggles", "보안경"],
-  ["ppe_gloves", "장갑"],
-  ["ppe_worn", "PPE 착용 완료"],
-  ["site_entered", "현장 진입"],
-  ["leak_gazed", "누출 응시"],
-  ["valve_locked", "밸브 잠금"],
-  ["boom_deployed", "방수붐 전개"],
-  ["neutralized", "중화"],
-  ["pad_absorbed", "흡착 패드"],
-  ["waste_packed", "폐기물 포장"],
-  ["waste_binned", "폐기물 투입"],
-  ["final_report", "최종 보고"],
-  ["decon_shower", "제독 샤워"],
-  ["scenario_complete", "시나리오 종료(TTS)"],
+const SOP_GROUPS = [
+  { name: "상황 인지", phase: "PrecursorCheck", steps: [["alarm_ack", "경보 인지"]] },
+  { name: "CCTV·점검", phase: "AnomalyDetection", steps: [["cctv_reviewed", "CCTV·점검 이력"]] },
+  { name: "PPE", phase: "PPE", steps: [
+    ["ppe_suit", "방호복"],
+    ["ppe_boots", "안전화"],
+    ["ppe_respirator", "호흡기"],
+    ["ppe_goggles", "보안경"],
+    ["ppe_gloves", "장갑"],
+    ["ppe_worn", "PPE 착용 완료"],
+  ]},
+  { name: "현장 확인", phase: "SiteCheck", steps: [
+    ["site_entered", "현장 진입"],
+    ["leak_gazed", "누출 응시"],
+  ]},
+  { name: "밸브 차단", phase: "Block", steps: [["valve_locked", "밸브 잠금"]] },
+  { name: "봉쇄·중화", phase: "Contain", steps: [
+    ["boom_deployed", "방수붐 전개"],
+    ["neutralized", "중화"],
+    ["pad_absorbed", "흡착 패드"],
+  ]},
+  { name: "폐기·제독", phase: "Collect", steps: [
+    ["waste_packed", "폐기물 포장"],
+    ["waste_binned", "폐기물 투입"],
+    ["ventilation_on", "환기"],
+    ["floor_cleaned", "바닥 정리"],
+    ["decon_shower", "제독 샤워"],
+  ]},
+  { name: "종료", phase: "Done", steps: [["scenario_complete", "시나리오 종료"]] },
 ];
 
+const SOP_STEPS = SOP_GROUPS.reduce((list, group) => list.concat(group.steps), []);
+
+// 최종 보고는 예정. 체크리스트·이탈 다음 단계에 넣지 않는다.
+
 function stepLabel(code) {
+  if (!code) return "";
+  if (code === "final_report") return "최종 보고(예정)";
   for (let i = 0; i < SOP_STEPS.length; i++) {
     if (SOP_STEPS[i][0] === code) return SOP_STEPS[i][1];
   }
   return code;
+}
+
+function phaseLabel(code) {
+  const names = {
+    None: "시작 전",
+    PrecursorCheck: "상황 인지",
+    AnomalyDetection: "CCTV·점검",
+    PPE: "PPE",
+    SiteCheck: "현장 확인",
+    Block: "밸브 차단",
+    Contain: "봉쇄·중화",
+    Collect: "폐기·제독",
+    Done: "종료",
+  };
+  return names[code] || code || "";
+}
+
+function typeLabel(code) {
+  const names = {
+    session_start: "세션 시작",
+    session_end: "세션 종료",
+    phase_enter: "phase 진입",
+    phase_complete: "phase 완료",
+    step_complete: "단계 완료",
+    violation: "위반",
+    heartbeat: "heartbeat",
+  };
+  return names[code] || code || "";
 }
 
 function completedSteps(session, result) {
@@ -164,20 +222,25 @@ function completedSteps(session, result) {
   return set;
 }
 
-function stuckMessage(session, done) {
-  const reason = session.end_reason || session.status || "";
-  let next = null;
+function skipStuck(code) {
+  return code === "decon_shower" || code === "final_report";
+}
+
+function nextIncomplete(done) {
   for (let i = 0; i < SOP_STEPS.length; i++) {
     const code = SOP_STEPS[i][0];
-    if (code === "decon_shower") continue;
-    if (!done[code]) {
-      next = SOP_STEPS[i];
-      break;
-    }
+    if (skipStuck(code)) continue;
+    if (!done[code]) return SOP_STEPS[i];
   }
+  return null;
+}
+
+function stuckMessage(session, done) {
+  const reason = session.end_reason || session.status || "";
   if (reason === "completed" && done.scenario_complete) {
     return "끝까지 완료했습니다. 막힌 구간은 없습니다.";
   }
+  const next = nextIncomplete(done);
   if (next) {
     const why =
       reason === "timeout" ? "시간 초과" :
@@ -189,6 +252,24 @@ function stuckMessage(session, done) {
   return "도달 단계: " + stepLabel(session.reached_step || "");
 }
 
+function groupedRows(items, keyFn, render) {
+  const groups = [];
+  for (let i = 0; i < items.length; i++) {
+    const key = keyFn(items[i]);
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.items.push(items[i]);
+    else groups.push({ key, items: [items[i]] });
+  }
+  const rows = [];
+  for (let g = 0; g < groups.length; g++) {
+    const group = groups[g];
+    for (let i = 0; i < group.items.length; i++) {
+      rows.push(render(group.items[i], i === 0 ? group.items.length : 0, group.key));
+    }
+  }
+  return rows.join("");
+}
+
 async function openDetail(sessionId) {
   currentDetailId = sessionId;
   const session = await loadJson("/v1/sessions/" + sessionId);
@@ -196,64 +277,83 @@ async function openDetail(sessionId) {
   panels.experience.classList.remove("active");
   detail.classList.remove("hidden");
   detail.classList.add("active");
-  document.getElementById("detail-title").textContent = session.session_id;
   document.getElementById("jsonl-link").href = "/v1/sessions/" + sessionId + "/events.jsonl";
   const result = session.result && session.result.result ? session.result.result : session.result || {};
   const done = completedSteps(session, result);
-  let nextCode = null;
-  for (let i = 0; i < SOP_STEPS.length; i++) {
-    const code = SOP_STEPS[i][0];
-    if (code === "decon_shower") continue;
-    if (!done[code]) {
-      nextCode = code;
-      break;
-    }
-  }
+  const next = nextIncomplete(done);
+  const nextCode = next ? next[0] : null;
   document.getElementById("detail-stuck").textContent = stuckMessage(session, done);
-  document.getElementById("detail-summary").textContent = JSON.stringify(
-    {
-      mode: session.mode,
-      trainee: session.trainee_id,
-      passed: session.passed,
-      reason: session.end_reason,
-      durationSec: session.duration_sec,
-      reached: session.reached_step,
-    },
-    null,
-    2
-  );
-  const phases = (result.phaseDurationsSec) || {};
-  document.getElementById("detail-phases").innerHTML = Object.keys(phases)
-    .map((key) => `<li>${key}: ${fmtSec(phases[key])}</li>`)
-    .join("") || "<li>없음</li>";
-  document.getElementById("detail-steps").innerHTML = SOP_STEPS.map((item) => {
-    const code = item[0];
-    const name = item[1];
-    let cls = "step-todo";
-    let mark = "☐";
-    if (done[code]) {
-      cls = "step-done";
-      mark = "☑";
-    } else if (code === nextCode) {
-      cls = "step-next";
-      mark = "►";
-    }
-    return `<li class="${cls}">${mark} ${name} (${code})</li>`;
+
+  const summary = [
+    ["모드", session.mode === "education" ? "교육" : session.mode === "experience" ? "체험" : session.mode || ""],
+    ["교육생", session.trainee_id || "-"],
+    ["이수", passedLabel(session.passed)],
+    ["종료", session.end_reason || session.status || ""],
+    ["소요", fmtSec(session.duration_sec) || "-"],
+    ["도달", stepLabel(session.reached_step || session.reached_phase || "")],
+  ];
+  document.getElementById("detail-summary").innerHTML = summary.map((row, index) => {
+    const group = index === 0
+      ? `<td class="group" rowspan="${summary.length}">세션</td>`
+      : "";
+    return `<tr>${group}<td>${escapeHtml(row[0])}</td><td>${escapeHtml(row[1])}</td></tr>`;
   }).join("");
-  const violations = (session.events || []).filter((event) => event.type === "violation");
-  const vbox = document.getElementById("detail-violations");
-  vbox.innerHTML = violations.length
-    ? violations.map((event) => {
-        const bits = [event.phase, event.step, event.code, event.severity].filter(Boolean).join(" / ");
-        return `<li>t=${event.t} ${bits}</li>`;
+
+  const stepRows = [];
+  SOP_GROUPS.forEach((group) => {
+    group.steps.forEach((item, index) => {
+      const code = item[0];
+      const name = item[1];
+      let cls = "step-todo";
+      let status = "미완료";
+      if (done[code]) {
+        cls = "step-done";
+        status = "완료";
+      } else if (code === nextCode) {
+        cls = "step-next";
+        status = "다음";
+      }
+      const groupCell = index === 0
+        ? `<td class="group" rowspan="${group.steps.length}">${escapeHtml(group.name)}</td>`
+        : "";
+      stepRows.push(
+        `<tr class="${cls}">${groupCell}<td>${escapeHtml(name)}</td><td>${escapeHtml(code)}</td><td class="status">${status}</td></tr>`
+      );
+    });
+  });
+  document.getElementById("detail-steps").innerHTML = stepRows.join("");
+
+  const phases = result.phaseDurationsSec || {};
+  const phaseKeys = Object.keys(phases);
+  document.getElementById("detail-phases").innerHTML = phaseKeys.length
+    ? phaseKeys.map((key, index) => {
+        const group = index === 0
+          ? `<td class="group" rowspan="${phaseKeys.length}">소요</td>`
+          : "";
+        return `<tr>${group}<td>${escapeHtml(phaseLabel(key))}</td><td>${escapeHtml(fmtSec(phases[key]))}</td></tr>`;
       }).join("")
-    : "<li>없음</li>";
-  document.getElementById("detail-events").innerHTML = (session.events || [])
-    .map((event) => {
-      const bits = [event.type, event.phase, event.step, event.code].filter(Boolean).join(" / ");
-      return `<li>t=${event.t} ${bits}</li>`;
-    })
-    .join("") || "<li>없음</li>";
+    : emptyBody(3, "없음");
+
+  const violations = (session.events || []).filter((event) => event.type === "violation");
+  document.getElementById("detail-violations").innerHTML = violations.length
+    ? violations.map((event) =>
+        `<tr><td>${escapeHtml(event.t)}</td><td>${escapeHtml(phaseLabel(event.phase))}</td><td>${escapeHtml(stepLabel(event.step))}</td><td>${escapeHtml(event.code)}</td><td>${escapeHtml(event.severity)}</td></tr>`
+      ).join("")
+    : emptyBody(5, "없음");
+
+  const events = session.events || [];
+  document.getElementById("detail-events").innerHTML = events.length
+    ? groupedRows(
+        events,
+        (event) => event.phase || "",
+        (event, rowspan, phase) => {
+          const group = rowspan
+            ? `<td class="group" rowspan="${rowspan}">${escapeHtml(phaseLabel(phase))}</td>`
+            : "";
+          return `<tr>${group}<td>${escapeHtml(event.t)}</td><td>${escapeHtml(typeLabel(event.type))}</td><td>${escapeHtml(stepLabel(event.step))}</td></tr>`;
+        }
+      )
+    : emptyBody(4, "없음");
 }
 
 document.getElementById("back").addEventListener("click", () => {

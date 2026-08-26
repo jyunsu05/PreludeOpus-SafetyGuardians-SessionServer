@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Safety Guardians 세션</title>
-  <link rel="stylesheet" href="/static/style.css?v=3">
+  <link rel="stylesheet" href="/static/style.css?v=9">
 </head>
 <body>
   <header>
@@ -39,7 +39,15 @@
     <section id="experience" class="panel">
       <div id="exp-stats" class="cards"></div>
       <h2>이탈 step</h2>
-      <ul id="exp-drops"></ul>
+      <table>
+        <thead>
+          <tr>
+            <th>단계</th>
+            <th>건수</th>
+          </tr>
+        </thead>
+        <tbody id="exp-drops"></tbody>
+      </table>
       <h2>오늘 세션</h2>
       <table>
         <thead>
@@ -58,19 +66,93 @@
     <section id="detail" class="panel hidden">
       <p><button type="button" id="back">목록으로</button>
         <a id="jsonl-link" href="#">JSONL 받기</a></p>
-      <h2 id="detail-title">세션</h2>
-      <p id="detail-stuck" class="stuck"></p>
-      <pre id="detail-summary"></pre>
-      <h3>단계 시간</h3>
-      <ul id="detail-phases"></ul>
-      <h3>진행 (여기서 막힘)</h3>
-      <ul id="detail-steps"></ul>
-      <h3>위반</h3>
-      <ul id="detail-violations"></ul>
-      <h3>타임라인</h3>
-      <ol id="detail-events"></ol>
+
+      <article class="sheet">
+        <div class="sheet-head">
+          <h2>세션 진행 현황표</h2>
+          <p id="detail-stuck"></p>
+        </div>
+        <table class="sheet-table">
+          <thead>
+            <tr>
+              <th>구분</th>
+              <th>항목</th>
+              <th>내용</th>
+            </tr>
+          </thead>
+          <tbody id="detail-summary"></tbody>
+        </table>
+      </article>
+
+      <article class="sheet">
+        <div class="sheet-head">
+          <h2>단계 진행 현황표</h2>
+        </div>
+        <table class="sheet-table">
+          <thead>
+            <tr>
+              <th>구분</th>
+              <th>단계명</th>
+              <th>코드</th>
+              <th>상태</th>
+            </tr>
+          </thead>
+          <tbody id="detail-steps"></tbody>
+        </table>
+      </article>
+
+      <article class="sheet">
+        <div class="sheet-head">
+          <h2>단계 시간 현황표</h2>
+        </div>
+        <table class="sheet-table">
+          <thead>
+            <tr>
+              <th>구분</th>
+              <th>단계명</th>
+              <th>시간</th>
+            </tr>
+          </thead>
+          <tbody id="detail-phases"></tbody>
+        </table>
+      </article>
+
+      <article class="sheet">
+        <div class="sheet-head">
+          <h2>위반 현황표</h2>
+        </div>
+        <table class="sheet-table">
+          <thead>
+            <tr>
+              <th>t</th>
+              <th>구분</th>
+              <th>단계</th>
+              <th>코드</th>
+              <th>severity</th>
+            </tr>
+          </thead>
+          <tbody id="detail-violations"></tbody>
+        </table>
+      </article>
+
+      <article class="sheet">
+        <div class="sheet-head">
+          <h2>타임라인 현황표</h2>
+        </div>
+        <table class="sheet-table">
+          <thead>
+            <tr>
+              <th>구분</th>
+              <th>t</th>
+              <th>유형</th>
+              <th>단계</th>
+            </tr>
+          </thead>
+          <tbody id="detail-events"></tbody>
+        </table>
+      </article>
     </section>
   </main>
-  <script src="/static/app.js?v=7"></script>
+  <script src="/static/app.js?v=10"></script>
 </body>
 </html>
