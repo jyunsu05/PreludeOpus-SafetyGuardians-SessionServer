@@ -32,14 +32,52 @@ th, td { border-bottom: 1px solid #ddd; padding: 0.45rem 0.5rem; text-align: lef
   border-radius: 6px;
 }
 .card strong { display: block; font-size: 1.4rem; }
-pre { background: #fff; padding: 0.8rem; overflow: auto; }
 .empty td { color: #5a6158; }
-.stuck {
-  background: #fff4e5;
-  border-left: 4px solid #c45c26;
-  padding: 0.7rem 0.9rem;
-  font-weight: 600;
+.sheet {
+  margin: 1.1rem 0 1.6rem;
+  border: 2px solid #1a1a1a;
+  background: #fff;
 }
-.step-done { color: #1f4d3a; }
-.step-next { color: #c45c26; font-weight: 700; }
-.step-todo { color: #8a9088; }
+.sheet-head {
+  background: #FFBF00;
+  color: #1a1a1a;
+  text-align: center;
+  padding: 0.75rem 1rem 0.65rem;
+  border-bottom: 1px solid #1a1a1a;
+}
+.sheet-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+}
+.sheet-head p {
+  margin: 0.35rem 0 0;
+  font-size: 0.86rem;
+  font-weight: 500;
+  color: #5a5340;
+}
+.sheet-table { width: 100%; border-collapse: collapse; background: #fff; }
+.sheet-table th {
+  background: #f4d03f;
+  color: #111;
+  font-weight: 800;
+  text-align: center;
+  border: 1px solid #1a1a1a;
+  padding: 0.5rem 0.4rem;
+}
+.sheet-table td {
+  border: 1px solid #1a1a1a;
+  text-align: center;
+  vertical-align: middle;
+  padding: 0.42rem 0.5rem;
+  background: #fff;
+}
+.sheet-table td.group {
+  background: #fff6d6;
+  font-weight: 700;
+  width: 7.4rem;
+}
+tr.step-done td.status { color: #1f4d3a; font-weight: 800; }
+tr.step-next td { background: #fff4e5; }
+tr.step-next td.status { color: #c45c26; font-weight: 800; }
+tr.step-todo td:not(.group) { color: #6b7168; }
