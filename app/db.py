@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import sqlite3
+from contextlib import contextmanager
+from collections.abc import Iterator
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -19,19 +21,27 @@ def _raw_connect() -> sqlite3.Connection:
     return conn
 
 
-def connect() -> sqlite3.Connection:
+@contextmanager
+def connect() -> Iterator[sqlite3.Connection]:
     global _initialized
     if not _initialized:
         init_db()
-    return _raw_connect()
+    conn = _raw_connect()
+    try:
+        with conn:
+            yield conn
+    finally:
+        conn.close()
 
 
 def init_db() -> None:
     global _initialized
-    with _raw_connect() as conn:
-        conn.executescript(
-            """
-            CREATE TABLE IF NOT EXISTS devices (
+    conn = _raw_connect()
+    try:
+        with conn:
+            conn.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS devices (
                 device_id TEXT PRIMARY KEY,
                 token_hash TEXT,
                 last_seen_at TEXT,
@@ -73,6 +83,7 @@ def init_db() -> None:
                 session_id TEXT NOT NULL,
                 batch_seq INTEGER NOT NULL,
                 event_index INTEGER NOT NULL,
+                event_id TEXT,
                 t REAL,
                 at TEXT,
                 received_at TEXT,
@@ -91,6 +102,21 @@ def init_db() -> None:
                 ON session_events(session_id, t);
             CREATE INDEX IF NOT EXISTS idx_events_type
                 ON session_events(type, code);
-            """
-        )
+                """
+            )
+            columns = {
+                row["name"]
+                for row in conn.execute("PRAGMA table_info(session_events)").fetchall()
+            }
+            if "event_id" not in columns:
+                conn.execute("ALTER TABLE session_events ADD COLUMN event_id TEXT")
+            conn.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS idx_events_event_id
+                    ON session_events(event_id)
+                    WHERE event_id IS NOT NULL
+                """
+            )
+    finally:
+        conn.close()
     _initialized = True
