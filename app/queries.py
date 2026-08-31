@@ -101,12 +101,13 @@ def create_session(
         payload["trainee"] = {"id": trainee_id}
 
     with connect() as conn:
-        conn.execute(
+        cursor = conn.execute(
             """
             INSERT INTO sessions(
                 session_id, mode, device_id, trainee_id, course_id, scenario_id,
                 content_version, rules_json, status, started_at, received_started_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+            ON CONFLICT(session_id) DO NOTHING
             """,
             (
                 client_session_id,
@@ -121,6 +122,16 @@ def create_session(
                 now,
             ),
         )
+        created = cursor.rowcount > 0
+
+    if not created:
+        existing = session_row(client_session_id)
+        if existing is None:
+            raise fail(409, "session_conflict", client_session_id, rid)
+        touch_device(device_id, client_session_id, body.get("contentVersion") or content_version, now)
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(session_response(existing), status_code=200)
 
     touch_device(
         body.get("deviceId") or device_id,
@@ -184,22 +195,29 @@ def post_events(
         last_t = None
         last_phase = None
         last_step = None
+        accepted = 0
+        duplicate_events = 0
         for index, event in enumerate(events):
             if not isinstance(event, dict):
                 continue
             payload = event.get("payload") if isinstance(event.get("payload"), dict) else {}
             t_value = event.get("t")
-            conn.execute(
+            supplied_event_id = event.get("eventId")
+            event_id = supplied_event_id.strip() if isinstance(supplied_event_id, str) else ""
+            if not event_id:
+                event_id = f"legacy:{session_id}:{batch_seq}:{index}"
+            cursor = conn.execute(
                 """
-                INSERT INTO session_events(
-                    session_id, batch_seq, event_index, t, at, received_at,
+                INSERT OR IGNORE INTO session_events(
+                    session_id, batch_seq, event_index, event_id, t, at, received_at,
                     type, phase, step, code, severity, payload_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     session_id,
                     batch_seq,
                     index,
+                    event_id,
                     t_value,
                     event.get("at"),
                     now,
@@ -211,6 +229,10 @@ def post_events(
                     json.dumps(payload, ensure_ascii=False),
                 ),
             )
+            if cursor.rowcount == 0:
+                duplicate_events += 1
+                continue
+            accepted += 1
             if t_value is not None:
                 last_t = t_value
             if event.get("phase"):
@@ -233,7 +255,12 @@ def post_events(
             )
 
     touch_device(device_id, session_id, content_version, now)
-    return {"accepted": len(events), "duplicate": False, "lastT": last_t}
+    return {
+        "accepted": accepted,
+        "duplicate": False,
+        "duplicateEvents": duplicate_events,
+        "lastT": last_t,
+    }
 
 
 def complete_session(
@@ -334,7 +361,7 @@ def get_session(session_id: str) -> dict[str, Any] | None:
     with connect() as conn:
         events = conn.execute(
             """
-            SELECT t, at, received_at, type, phase, step, code, severity, payload_json
+            SELECT event_id, t, at, received_at, type, phase, step, code, severity, payload_json
             FROM session_events
             WHERE session_id = ?
             ORDER BY t ASC, batch_seq ASC, event_index ASC
@@ -359,6 +386,7 @@ def get_session(session_id: str) -> dict[str, Any] | None:
     timeline = []
     for event in events:
         item = dict(event)
+        item["eventId"] = item.pop("event_id")
         try:
             item["payload"] = json.loads(item.pop("payload_json") or "{}")
         except json.JSONDecodeError:
@@ -374,7 +402,7 @@ def download_jsonl(session_id: str) -> Response:
     with connect() as conn:
         events = conn.execute(
             """
-            SELECT t, at, type, phase, step, code, severity, payload_json
+            SELECT event_id, t, at, type, phase, step, code, severity, payload_json
             FROM session_events
             WHERE session_id = ?
             ORDER BY t ASC, batch_seq ASC, event_index ASC
@@ -384,6 +412,7 @@ def download_jsonl(session_id: str) -> Response:
     lines = []
     for event in events:
         item = {
+            "eventId": event["event_id"],
             "t": event["t"],
             "at": event["at"],
             "type": event["type"],
