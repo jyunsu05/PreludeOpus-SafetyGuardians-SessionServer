@@ -162,6 +162,12 @@ const SOP_GROUPS = [
     ["ventilation_on", "환기"],
     ["floor_cleaned", "바닥 정리"],
     ["decon_shower", "제독 샤워"],
+    ["ppe_doff_gloves", "장갑 탈의"],
+    ["ppe_doff_boots", "안전화 탈의"],
+    ["ppe_doff_suit", "보호복 탈의"],
+    ["ppe_doff_goggles", "보안경 탈의"],
+    ["ppe_doff_respirator", "방독면 탈의"],
+    ["ppe_doff_complete", "PPE 탈의 완료"],
   ]},
   { name: "종료", phase: "Done", steps: [["scenario_complete", "시나리오 종료"]] },
 ];
