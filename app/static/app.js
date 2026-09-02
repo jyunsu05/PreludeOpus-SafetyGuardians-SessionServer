@@ -168,6 +168,7 @@ const SOP_GROUPS = [
     ["ppe_doff_goggles", "보안경 탈의"],
     ["ppe_doff_respirator", "방독면 탈의"],
     ["ppe_doff_complete", "PPE 탈의 완료"],
+    ["eyewash", "세안"],
   ]},
   { name: "종료", phase: "Done", steps: [["scenario_complete", "시나리오 종료"]] },
 ];
