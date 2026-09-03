@@ -73,3 +73,24 @@ uvicorn app.main:app --host 0.0.0.0 --port 8080
 docker build -t preludeopus-session-server .
 docker run --rm -p 8080:8080 -v %cd%\data:/app/data preludeopus-session-server
 ```
+
+## Security configuration
+
+The defaults keep single-PC development convenient. Set these environment variables before using the server on a shared network:
+
+- `DEVICE_TOKEN`: bearer token required from Unity write requests.
+- `ADMIN_TOKEN`: password required for the dashboard and read/export APIs. Sign in as user `admin` in the browser prompt; only the password is checked.
+- `ALLOWED_ORIGINS`: comma-separated CORS origins. The default is `*` for local compatibility.
+- `MAX_REQUEST_BYTES`: maximum accepted HTTP request size. The default is 524288 bytes.
+
+Each Unity client must send a stable, unique `X-Device-Id`. A device can append events to and complete only sessions it owns. A `deviceId` in the JSON body may not override the authenticated header.
+
+Example for Windows PowerShell:
+
+```powershell
+$env:DEVICE_TOKEN = "replace-with-a-device-secret"
+$env:ADMIN_TOKEN = "replace-with-an-admin-secret"
+$env:ALLOWED_ORIGINS = "http://127.0.0.1:8080"
+```
+
+`backup.bat` now uses SQLite's online backup API and verifies the resulting database with `PRAGMA integrity_check`.

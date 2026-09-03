@@ -8,8 +8,20 @@ if not exist "data\sessions.db" (
   exit /b 1
 )
 
-for /f %%i in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd-HHmmss"') do set STAMP=%%i
-if not exist "backups" mkdir "backups"
-xcopy /E /I /Y "data" "backups\data-%STAMP%" >nul
-echo Copied data to backups\data-%STAMP%
+set "PY_CMD="
+py -3 -c "import sys" >nul 2>&1 && set "PY_CMD=py -3"
+if not defined PY_CMD python -c "import sys" >nul 2>&1 && set "PY_CMD=python"
+if not defined PY_CMD (
+  echo Python 3.11+ is required.
+  pause
+  exit /b 1
+)
+
+%PY_CMD% -m app.backup_db
+if errorlevel 1 (
+  echo Backup failed.
+  pause
+  exit /b 1
+)
+echo Backup completed and integrity checked.
 pause

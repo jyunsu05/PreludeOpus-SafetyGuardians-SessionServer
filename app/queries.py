@@ -15,9 +15,15 @@ from .profiles import profile_for
 Fail = Callable[[int, str, str, str], HTTPException]
 
 
-def touch_device(device_id: str, session_id: str | None, app_version: str | None, now: str) -> None:
-    with connect() as conn:
-        conn.execute(
+def touch_device(
+    device_id: str,
+    session_id: str | None,
+    app_version: str | None,
+    now: str,
+    conn=None,
+) -> None:
+    def execute(target) -> None:
+        target.execute(
             """
             INSERT INTO devices(device_id, last_seen_at, last_session_id, app_version)
             VALUES (?, ?, ?, ?)
@@ -28,6 +34,18 @@ def touch_device(device_id: str, session_id: str | None, app_version: str | None
             """,
             (device_id, now, session_id, app_version),
         )
+
+    if conn is not None:
+        execute(conn)
+        return
+    with connect() as own_conn:
+        execute(own_conn)
+
+
+def require_session_owner(row, device_id: str, rid: str, fail: Fail) -> None:
+    owner = (row["device_id"] or "unknown-device").strip()
+    if owner != device_id:
+        raise fail(403, "session_device_mismatch", "session belongs to another device", rid)
 
 
 def session_row(session_id: str):
@@ -77,6 +95,7 @@ def create_session(
 
     existing = session_row(client_session_id)
     if existing:
+        require_session_owner(existing, device_id, rid, fail)
         touch_device(device_id, client_session_id, body.get("contentVersion") or content_version, now)
         from fastapi.responses import JSONResponse
 
@@ -112,7 +131,7 @@ def create_session(
             (
                 client_session_id,
                 mode,
-                body.get("deviceId") or device_id,
+                device_id,
                 trainee_id,
                 body.get("courseId"),
                 scenario_id,
@@ -128,13 +147,14 @@ def create_session(
         existing = session_row(client_session_id)
         if existing is None:
             raise fail(409, "session_conflict", client_session_id, rid)
+        require_session_owner(existing, device_id, rid, fail)
         touch_device(device_id, client_session_id, body.get("contentVersion") or content_version, now)
         from fastapi.responses import JSONResponse
 
         return JSONResponse(session_response(existing), status_code=200)
 
     touch_device(
-        body.get("deviceId") or device_id,
+        device_id,
         client_session_id,
         body.get("contentVersion") or content_version,
         now,
@@ -153,26 +173,23 @@ def post_events(
     rid: str,
     fail: Fail,
 ):
-    row = session_row(session_id)
-    if row is None:
-        raise fail(404, "session_not_found", session_id, rid)
-    if row["status"] == "completed":
-        raise fail(409, "session_already_completed", session_id, rid)
-
-    try:
-        batch_seq = int(body.get("batchSeq") or 0)
-    except (TypeError, ValueError) as exc:
-        raise fail(400, "invalid_json", "batchSeq must be an integer", rid) from exc
-    if batch_seq < 1:
-        raise fail(400, "invalid_json", "batchSeq must be >= 1", rid)
+    batch_seq = body["batchSeq"]
 
     events = body.get("events") or []
     if not isinstance(events, list):
         raise fail(400, "invalid_json", "events must be an array", rid)
-    if len(json.dumps(events)) > 256 * 1024:
+    if len(json.dumps(events, ensure_ascii=False).encode("utf-8")) > 256 * 1024:
         raise fail(413, "payload_too_large", "events batch too large", rid)
 
     with connect() as conn:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute("SELECT * FROM sessions WHERE session_id = ?", (session_id,)).fetchone()
+        if row is None:
+            raise fail(404, "session_not_found", session_id, rid)
+        require_session_owner(row, device_id, rid, fail)
+        if row["status"] == "completed":
+            raise fail(409, "session_already_completed", session_id, rid)
+
         existing = conn.execute(
             "SELECT 1 FROM session_batches WHERE session_id = ? AND batch_seq = ?",
             (session_id, batch_seq),
@@ -254,7 +271,8 @@ def post_events(
                 (last_phase, last_step, session_id),
             )
 
-    touch_device(device_id, session_id, content_version, now)
+        touch_device(device_id, session_id, content_version, now, conn=conn)
+
     return {
         "accepted": accepted,
         "duplicate": False,
@@ -272,15 +290,17 @@ def complete_session(
     rid: str,
     fail: Fail,
 ):
-    row = session_row(session_id)
-    if row is None:
-        raise fail(404, "session_not_found", session_id, rid)
-    if row["status"] == "completed":
-        return {"sessionId": session_id, "duplicate": True, "status": "completed"}
-
     result = body.get("result") if isinstance(body.get("result"), dict) else {}
     with connect() as conn:
-        conn.execute(
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute("SELECT * FROM sessions WHERE session_id = ?", (session_id,)).fetchone()
+        if row is None:
+            raise fail(404, "session_not_found", session_id, rid)
+        require_session_owner(row, device_id, rid, fail)
+        if row["status"] == "completed":
+            return {"sessionId": session_id, "duplicate": True, "status": "completed"}
+
+        cursor = conn.execute(
             """
             UPDATE sessions SET
                 status = 'completed',
@@ -293,7 +313,7 @@ def complete_session(
                 result_json = ?,
                 blocking_violations = ?,
                 warn_violations = ?
-            WHERE session_id = ?
+            WHERE session_id = ? AND status = 'active'
             """,
             (
                 body.get("reason"),
@@ -308,8 +328,10 @@ def complete_session(
                 session_id,
             ),
         )
+        if cursor.rowcount != 1:
+            return {"sessionId": session_id, "duplicate": True, "status": "completed"}
+        touch_device(device_id, session_id, content_version, now, conn=conn)
 
-    touch_device(device_id, session_id, content_version, now)
     return {"sessionId": session_id, "duplicate": False, "status": "completed"}
 
 

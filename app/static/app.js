@@ -89,12 +89,12 @@ async function loadEducation() {
   }
   for (const session of rows) {
     eduBody.appendChild(sessionRow(session, `
-      <td>${fmtTime(session.started_at)}</td>
-      <td>${session.trainee_id || "-"}</td>
-      <td>${passedLabel(session.passed)}</td>
-      <td>${fmtSec(session.duration_sec)}</td>
-      <td>${stepLabel(session.reached_step || session.reached_phase || "")}</td>
-      <td>${session.blocking_violations || 0} / ${session.warn_violations || 0}</td>
+      <td>${escapeHtml(fmtTime(session.started_at))}</td>
+      <td>${escapeHtml(session.trainee_id || "-")}</td>
+      <td>${escapeHtml(passedLabel(session.passed))}</td>
+      <td>${escapeHtml(fmtSec(session.duration_sec))}</td>
+      <td>${escapeHtml(stepLabel(session.reached_step || session.reached_phase || ""))}</td>
+      <td>${escapeHtml(session.blocking_violations || 0)} / ${escapeHtml(session.warn_violations || 0)}</td>
       <td><button type="button" data-open>상세</button></td>
     `));
   }
@@ -125,11 +125,11 @@ async function loadExperience() {
   }
   for (const session of rows) {
     expBody.appendChild(sessionRow(session, `
-      <td>${fmtTime(session.started_at)}</td>
-      <td>${session.device_id || ""}</td>
-      <td>${session.end_reason || session.status}</td>
-      <td>${fmtSec(session.duration_sec)}</td>
-      <td>${stepLabel(session.reached_step || session.reached_phase || "")}</td>
+      <td>${escapeHtml(fmtTime(session.started_at))}</td>
+      <td>${escapeHtml(session.device_id || "")}</td>
+      <td>${escapeHtml(session.end_reason || session.status)}</td>
+      <td>${escapeHtml(fmtSec(session.duration_sec))}</td>
+      <td>${escapeHtml(stepLabel(session.reached_step || session.reached_phase || ""))}</td>
       <td><button type="button" data-open>상세</button></td>
     `));
   }
@@ -279,12 +279,13 @@ function groupedRows(items, keyFn, render) {
 
 async function openDetail(sessionId) {
   currentDetailId = sessionId;
-  const session = await loadJson("/v1/sessions/" + sessionId);
+  const encodedSessionId = encodeURIComponent(sessionId);
+  const session = await loadJson("/v1/sessions/" + encodedSessionId);
   panels.education.classList.remove("active");
   panels.experience.classList.remove("active");
   detail.classList.remove("hidden");
   detail.classList.add("active");
-  document.getElementById("jsonl-link").href = "/v1/sessions/" + sessionId + "/events.jsonl";
+  document.getElementById("jsonl-link").href = "/v1/sessions/" + encodedSessionId + "/events.jsonl";
   const result = session.result && session.result.result ? session.result.result : session.result || {};
   const done = completedSteps(session, result);
   const next = nextIncomplete(done);
