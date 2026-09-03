@@ -14,10 +14,11 @@ _initialized = False
 
 def _raw_connect() -> sqlite3.Connection:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=10)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("PRAGMA busy_timeout = 5000")
     return conn
 
 
@@ -76,7 +77,8 @@ def init_db() -> None:
                 session_id TEXT NOT NULL,
                 batch_seq INTEGER NOT NULL,
                 sent_at TEXT,
-                PRIMARY KEY (session_id, batch_seq)
+                PRIMARY KEY (session_id, batch_seq),
+                FOREIGN KEY (session_id) REFERENCES sessions(session_id) ON DELETE CASCADE
             );
 
             CREATE TABLE IF NOT EXISTS session_events (
@@ -93,7 +95,8 @@ def init_db() -> None:
                 code TEXT,
                 severity TEXT,
                 payload_json TEXT,
-                PRIMARY KEY (session_id, batch_seq, event_index)
+                PRIMARY KEY (session_id, batch_seq, event_index),
+                FOREIGN KEY (session_id) REFERENCES sessions(session_id) ON DELETE CASCADE
             );
 
             CREATE INDEX IF NOT EXISTS idx_sessions_mode_started
